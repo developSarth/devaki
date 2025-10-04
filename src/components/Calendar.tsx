@@ -1,16 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import SymptomModal from './SymptomModal';
+import { dataService, DailySymptom } from '../services/dataService';
 
 interface CalendarProps {
   userProfile: any;
+  userId: string;
 }
 
-export default function Calendar({ userProfile }: CalendarProps) {
+export default function Calendar({ userProfile, userId }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showSymptomModal, setShowSymptomModal] = useState(false);
-  const [symptoms, setSymptoms] = useState<{[key: string]: any}>({});
+  const [symptoms, setSymptoms] = useState<{[key: string]: DailySymptom}>({});
+  const [existingSymptom, setExistingSymptom] = useState<DailySymptom | null>(null);
+
+  useEffect(() => {
+    loadSymptoms();
+  }, [userId, currentDate]);
+
+  const loadSymptoms = async () => {
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+    const monthSymptoms = await dataService.getDailySymptoms(
+      userId,
+      startOfMonth.toISOString().split('T')[0],
+      endOfMonth.toISOString().split('T')[0]
+    );
+
+    const symptomsMap: {[key: string]: DailySymptom} = {};
+    monthSymptoms.forEach(symptom => {
+      const key = getDateKeyFromString(symptom.date);
+      symptomsMap[key] = symptom;
+    });
+
+    setSymptoms(symptomsMap);
+  };
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -29,14 +55,24 @@ export default function Calendar({ userProfile }: CalendarProps) {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
   };
 
-  const handleDateClick = (day: number) => {
+  const handleDateClick = async (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     setSelectedDate(date);
+
+    const dateStr = date.toISOString().split('T')[0];
+    const existing = await dataService.getSymptomByDate(userId, dateStr);
+    setExistingSymptom(existing);
+
     setShowSymptomModal(true);
   };
 
   const getDateKey = (day: number) => {
-    return `${currentDate.getFullYear()}-${currentDate.getMonth()}-${day}`;
+    return `${currentDate.getFullYear()}-${String(currentDate.getMonth()).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  const getDateKeyFromString = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
   const hasSymptoms = (day: number) => {
@@ -116,12 +152,21 @@ export default function Calendar({ userProfile }: CalendarProps) {
           isOpen={showSymptomModal}
           onClose={() => setShowSymptomModal(false)}
           date={selectedDate}
-          onSave={(symptomData) => {
-            const dateKey = getDateKey(selectedDate.getDate());
-            setSymptoms(prev => ({ ...prev, [dateKey]: symptomData }));
+          onSave={async (symptomData) => {
+            const symptom: DailySymptom = {
+              userId,
+              date: selectedDate.toISOString().split('T')[0],
+              symptoms: symptomData.symptoms || {},
+              flowLevel: symptomData.flowLevel,
+              mood: symptomData.mood,
+              notes: symptomData.notes
+            };
+
+            await dataService.saveDailySymptom(symptom);
+            await loadSymptoms();
             setShowSymptomModal(false);
           }}
-          existingSymptoms={symptoms[getDateKey(selectedDate.getDate())]}
+          existingSymptoms={existingSymptom}
           userProfile={userProfile}
         />
       )}

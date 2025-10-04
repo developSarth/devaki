@@ -1,20 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, Calendar, Heart, AlertTriangle, Target } from 'lucide-react';
+import { dataService } from '../services/dataService';
 
 interface InsightsViewProps {
   userProfile: any;
+  userId: string;
 }
 
-export default function InsightsView({ userProfile }: InsightsViewProps) {
-  const mockData = {
-    cycleLength: 28,
-    averagePeriodLength: 5,
-    nextPeriodDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-    commonSymptoms: ['cramps', 'fatigue', 'mood changes'],
-    severity: 'moderate'
+export default function InsightsView({ userProfile, userId }: InsightsViewProps) {
+  const [insights, setInsights] = useState<any>(null);
+
+  useEffect(() => {
+    loadInsights();
+  }, [userId]);
+
+  const loadInsights = () => {
+    const calculatedInsights = dataService.calculateInsights(userId);
+    setInsights(calculatedInsights);
   };
 
-  const insights = [
+  if (!insights) {
+    return <div className="text-center py-8">Loading insights...</div>;
+  }
+
+  const mockData = {
+    cycleLength: insights.averageCycleLength,
+    averagePeriodLength: insights.averagePeriodDuration,
+    nextPeriodDate: insights.nextPeriodPrediction ? new Date(insights.nextPeriodPrediction) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+    commonSymptoms: insights.commonSymptoms.length > 0 ? insights.commonSymptoms : ['No symptoms tracked yet'],
+    severity: insights.cycleRegularity
+  };
+
+  const insightCards = [
     {
       icon: Calendar,
       title: 'Cycle Pattern',
@@ -68,7 +85,7 @@ export default function InsightsView({ userProfile }: InsightsViewProps) {
     }
   ];
 
-  const allInsights = userProfile?.showMenopause ? [...insights, ...menopauseInsights] : insights;
+  const allInsights = userProfile?.showMenopause ? [...insightCards, ...menopauseInsights] : insightCards;
 
   return (
     <div className="space-y-6">

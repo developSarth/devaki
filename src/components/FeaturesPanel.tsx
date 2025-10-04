@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Calendar, Heart, BookOpen, TrendingUp, Settings, HelpCircle, Bell, Moon } from 'lucide-react';
+import { X, Calendar, Heart, BookOpen, TrendingUp, Settings, HelpCircle, Bell, Moon, GraduationCap } from 'lucide-react';
 
 interface FeaturesPanelProps {
   isOpen: boolean;
@@ -12,8 +12,9 @@ export default function FeaturesPanel({ isOpen, onClose, setCurrentView, userPro
   const features = [
     { id: 'calendar', icon: Calendar, label: 'Period Calendar', desc: 'Track your cycle and symptoms' },
     { id: 'symptoms', icon: Heart, label: 'Symptom Tracker', desc: 'Log daily symptoms and severity' },
-    { id: 'remedies', icon: BookOpen, label: 'Ayurvedic Remedies', desc: 'Natural healing solutions' },
+    { id: 'remedies', icon: BookOpen, label: 'Natural Remedies', desc: 'Wellness and natural healing' },
     { id: 'insights', icon: TrendingUp, label: 'Cycle Insights', desc: 'Understand your patterns' },
+    { id: 'education', icon: GraduationCap, label: 'Learn & Educate', desc: 'Menstrual health knowledge' },
     { id: 'notifications', icon: Bell, label: 'Smart Reminders', desc: 'Never miss important dates' },
     { id: 'settings', icon: Settings, label: 'Preferences', desc: 'Customize your experience' },
   ];
